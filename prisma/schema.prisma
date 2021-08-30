@@ -1,0 +1,170 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Account {
+  id                 Int       @id @default(autoincrement())
+  compoundId         String    @unique @map(name: "compound_id")
+  userId             Int       @map(name: "user_id")
+  providerType       String    @map(name: "provider_type")
+  providerId         String    @map(name: "provider_id")
+  providerAccountId  String    @map(name: "provider_account_id")
+  refreshToken       String?   @map(name: "refresh_token")
+  accessToken        String?   @map(name: "access_token")
+  accessTokenExpires DateTime? @map(name: "access_token_expires")
+  createdAt          DateTime  @default(now()) @map(name: "created_at")
+  updatedAt          DateTime  @default(now()) @map(name: "updated_at")
+
+
+  @@index([providerAccountId], name: "providerAccountId")
+  @@index([providerId], name: "providerId")
+  @@index([userId], name: "userId")
+  @@map(name: "accounts")
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map(name: "user_id")
+  expires      DateTime
+  sessionToken String   @unique @map(name: "session_token")
+  accessToken  String   @unique @map(name: "access_token")
+  createdAt    DateTime @default(now()) @map(name: "created_at")
+  updatedAt    DateTime @default(now()) @map(name: "updated_at")
+
+  @@map(name: "sessions")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map(name: "email_verified")
+  image         String?
+  createdAt     DateTime  @default(now()) @map(name: "created_at")
+  updatedAt     DateTime  @default(now()) @map(name: "updated_at")
+  role          Role?     @default(USER)
+
+  Profile Profile[]
+  Admin   Admin[]
+  @@map(name: "users")
+  Orders        Orders[]
+  Product       Product[]
+  Categories    Categories[]
+  Subcategories Subcategories[]
+  Reviews       Reviews[]
+}
+
+model VerificationRequest {
+  id         Int      @id @default(autoincrement())
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  createdAt  DateTime @default(now()) @map(name: "created_at")
+  updatedAt  DateTime @default(now()) @map(name: "updated_at")
+
+  @@map(name: "verification_requests")
+}
+
+model Profile {
+  id     Int   @id @default(autoincrement())
+  user   User? @relation(fields: [userId], references: [id])
+  userId Int?
+
+  products Product[]
+  order    Orders[]
+  Reviews  Reviews[]
+}
+
+model Orders {
+  id         Int       @id @default(autoincrement())
+  user       User?     @relation(fields: [userId], references: [id])
+  userId     Int?
+  products   Product[]
+  address    String
+  name       String
+  email      String
+  state      String
+  delivery   String
+  phone      String
+  totalprice Int
+  Profile    Profile?  @relation(fields: [profileId], references: [id])
+  profileId  Int?
+}
+
+model Product {
+  id            Int             @id @default(autoincrement())
+  user          User?           @relation(fields: [userId], references: [id])
+  userId        Int?
+  category      Categories[]    @relation(references: [id])
+  subcategories Subcategories[]
+  name          String
+
+  image          String
+  discription    String
+  discount_price Float
+  price          Float
+  reviews        Reviews[]
+  uniquecode String?
+
+  Orders    Orders?  @relation(fields: [ordersId], references: [id])
+  ordersId  Int?
+  Profile   Profile? @relation(fields: [profileId], references: [id])
+  profileId Int?
+}
+
+model Categories {
+  id            Int             @id @default(autoincrement())
+  user          User?           @relation(fields: [userId], references: [id])
+  userId        Int?
+  products      Product[]       @relation(references: [id])
+  subcategories Subcategories[]
+  name          String          @unique
+  image         String
+
+}
+
+model Subcategories {
+  id         Int         @id @default(autoincrement())
+  user       User?       @relation(fields: [userId], references: [id])
+  userId     Int?
+  products   Product[]   @relation(references: [id])
+  name       String      @unique
+  image      String
+  categories Categories? @relation(fields: [categoriesId], references: [id])
+
+  categoriesId Int?
+}
+
+model Reviews {
+  id        Int      @id @default(autoincrement())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
+  product   Product? @relation(fields: [productId], references: [id])
+  productId Int?
+  body      String
+  rating Int?
+
+  Profile   Profile? @relation(fields: [profileId], references: [id])
+  profileId Int?
+}
+
+model Admin {
+  id       Int    @id @default(autoincrement())
+  user     User?  @relation(fields: [userId], references: [id])
+  userId   Int?
+  username String
+  email    String
+}
+
+enum Role {
+  USER
+  ADMIN
+}
